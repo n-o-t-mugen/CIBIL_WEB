@@ -5,3 +5,4 @@ psycopg2
 pdfplumber
 beautifulsoup4
 gunicorn
+whitenoise
