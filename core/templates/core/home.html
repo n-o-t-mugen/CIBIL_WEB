@@ -1,0 +1,154 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Home | CIBIL Portal{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="card">
+    <div class="text-center">
+        <h1 class="mb-2">CIBIL Document Management System</h1>
+        <p class="subtitle mb-4">
+            Secure, time-controlled document ingestion and processing platform for CIBIL portfolio management.
+        </p>
+
+        <div class="mt-8 text-center">
+            <div class="inline-flex gap-4">
+                <a href="{% url 'cibil:cibil_dump' %}" class="btn btn-primary px-8 py-3" style="min-width: 200px;">
+                    <i class="fas fa-upload"></i>
+                    Upload Documents
+                </a>
+                <a href="{% url 'cibil:cibil_search' %}" class="btn btn-outline px-8 py-3" style="min-width: 200px;">
+                    <i class="fas fa-search"></i>
+                    Search Records
+                </a>
+            </div>
+        </div>
+
+
+    </div>
+</section>
+
+
+<!-- Stats Section -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">24/7</div>
+        <div class="stat-label">System Uptime</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">AES-256</div>
+        <div class="stat-label">Encryption</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">AWS S3</div>
+        <div class="stat-label">Secure Storage</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">DPDPA</div>
+        <div class="stat-label">Compliant</div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="card">
+    <h3 class="card-title">
+        <i class="fas fa-shield-alt"></i>
+        Platform Features
+    </h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- <div class="feature-item">
+            <div class="feature-icon"> -->
+                <!-- <i class="fas fa-clock"></i> -->
+            <!-- </div>
+            <h4>Time-Restricted Uploads</h4>
+            <p class="text-muted">Upload documents only during approved windows (10:00 - 20:00 IST).</p> -->
+        </div> 
+        
+        <div class="feature-item">
+            <div class="feature-icon">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <h4>Secure Cloud Storage</h4>
+            <p class="text-muted">All documents are encrypted and stored in secure AWS S3 buckets.</p>
+        </div>
+        
+        <div class="feature-item">
+            <div class="feature-icon">
+                <i class="fas fa-sync-alt"></i>
+            </div>
+            <h4>Automated Processing</h4>
+            <p class="text-muted">Automated pipeline for document validation, parsing, and database integration.</p>
+        </div>
+        
+        <div class="feature-item">
+            <div class="feature-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h4>Real-time Monitoring</h4>
+            <p class="text-muted">Track upload status and processing progress in real-time.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Window Info -->
+<!-- <div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-calendar-alt"></i>
+            Upload Schedule
+        </h3>
+        <span class="badge badge-info">Active Window: 10:00 - 20:00 IST</span>
+    </div>
+    
+    <p class="mb-3">
+        To ensure optimal processing and system performance, document uploads are restricted to specific time windows.
+    </p>
+    
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <div>
+            <strong>Current Status:</strong> 
+            {% now "H" as current_hour %}
+            {% if current_hour|add:"0" >= 10 and current_hour|add:"0" < 20 %}
+                Upload window is <strong>OPEN</strong> - You can submit documents now.
+            {% else %}
+                Upload window is <strong>CLOSED</strong> - Please return during operational hours.
+            {% endif %}
+        </div>
+    </div>
+</div> -->
+
+<style>
+    .feature-item {
+        padding: var(--space-lg);
+        background: var(--bg-primary);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+    }
+    
+    .feature-icon {
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: var(--space-md);
+    }
+    
+    .feature-item h4 {
+        margin-bottom: var(--space-sm);
+        color: var(--text-primary);
+    }
+    
+    .grid {
+        display: grid;
+        gap: var(--space-md);
+    }
+    
+    @media (min-width: 768px) {
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}

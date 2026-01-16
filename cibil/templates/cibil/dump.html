@@ -1,0 +1,186 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Upload | CIBIL Portal{% endblock %}
+
+{% block content %}
+<!-- Page Header - Reduced margin -->
+<div class="card-header mb-2">
+    <div>
+        <h1>Document Upload Dashboard</h1>
+        <p class="text-muted">Upload CIBIL documents for secure processing.</p>
+    </div>
+</div>
+
+<!-- Messages - Reduced margin -->
+{% if messages %}
+<div class="mb-2">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-error{% else %}alert-info{% endif %}">
+        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Upload Form Card - Reduced margin -->
+<div class="card mb-2">
+    <h3 class="card-title mb-2">
+        <i class="fas fa-file-upload"></i>
+        Upload Documents
+    </h3>
+    
+    <form method="post" enctype="multipart/form-data" id="uploadForm" onsubmit="showLoading('uploadForm')">
+        {% csrf_token %}
+        
+        <!-- File Upload Widget -->
+        <div class="upload-widget mb-2" onclick="document.getElementById('id_files').click()">
+            <div class="upload-icon">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <h4 class="upload-text">Drop files here or click to upload</h4>
+            <p class="text-muted mb-1">Supports PDF and HTML files up to 10MB each</p>
+            <span class="badge badge-info">Choose Files</span>
+        </div>
+        
+        <!-- Hidden File Input -->
+        <div class="form-group" style="display: none;">
+            <label for="id_files" class="form-label">Select Files</label>
+            {{ form.files }}
+        </div>
+        
+        <!-- Selected Files Preview -->
+        <div id="selectedFiles" class="mb-2" style="display: none;">
+            <h4 class="mb-1">Selected Files:</h4>
+            <div id="fileList" class="space-y-1"></div>
+        </div>
+        
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary w-full {% if not is_within_window %}opacity-50 cursor-not-allowed{% endif %}" 
+                {% if not is_within_window %}disabled{% endif %}>
+            <i class="fas fa-paper-plane"></i>
+            {% if is_within_window %}
+                Upload Documents to S3
+            {% else %}
+                Uploads Disabled (Outside Window)
+            {% endif %}
+        </button>
+        
+        <!-- Loading Indicator -->
+        <div class="loading mt-2" id="loadingIndicator">
+            <div class="loading-spinner"></div>
+            <p class="text-muted">Uploading documents to secure storage...</p>
+        </div>
+    </form>
+    
+    <!-- Success Message -->
+    <div class="text-center mt-4 text-muted">
+        <p>
+            <i class="fas fa-info-circle"></i>
+            After successful upload, you can search for processed records in the 
+            <a href="{% url 'cibil:cibil_search' %}" class="table-link">Search</a> section.
+        </p>
+    </div>
+</div>
+
+<!-- Additional JavaScript -->
+<script>
+    // File selection preview
+    document.getElementById('id_files').addEventListener('change', function(e) {
+        const files = e.target.files;
+        const selectedFilesDiv = document.getElementById('selectedFiles');
+        const fileListDiv = document.getElementById('fileList');
+        
+        if (files.length > 0) {
+            fileListDiv.innerHTML = '';
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+                
+                const fileItem = document.createElement('div');
+                fileItem.className = 'flex justify-between items-center p-2 bg-gray-50 rounded';
+                fileItem.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="fas ${file.name.endsWith('.pdf') ? 'fa-file-pdf text-red-500' : 'fa-file-code text-blue-500'}"></i>
+                        <div>
+                            <div class="font-medium text-sm">${file.name}</div>
+                            <div class="text-xs text-gray-500">${fileSize} MB</div>
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-500">Ready to upload</span>
+                `;
+                
+                fileListDiv.appendChild(fileItem);
+            }
+            
+            selectedFilesDiv.style.display = 'block';
+        } else {
+            selectedFilesDiv.style.display = 'none';
+        }
+    });
+    
+    // Drag and drop functionality
+    const uploadWidget = document.querySelector('.upload-widget');
+    
+    uploadWidget.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadWidget.style.borderColor = 'var(--primary)';
+        uploadWidget.style.backgroundColor = 'var(--primary-light)';
+    });
+    
+    uploadWidget.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadWidget.style.borderColor = '';
+        uploadWidget.style.backgroundColor = '';
+    });
+    
+    uploadWidget.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadWidget.style.borderColor = '';
+        uploadWidget.style.backgroundColor = '';
+        
+        const files = e.dataTransfer.files;
+        const input = document.getElementById('id_files');
+        
+        // Create a new DataTransfer object and add files
+        const dataTransfer = new DataTransfer();
+        for (let i = 0; i < files.length; i++) {
+            if (files[i].type === 'application/pdf' || files[i].type === 'text/html') {
+                dataTransfer.items.add(files[i]);
+            }
+        }
+        
+        input.files = dataTransfer.files;
+        
+        // Trigger change event
+        const event = new Event('change', { bubbles: true });
+        input.dispatchEvent(event);
+    });
+</script>
+
+<style>
+    /* Reduce all margins to match search page tightness */
+    .text-red-500 { color: #ef4444; }
+    .text-blue-500 { color: #3b82f6; }
+    .bg-gray-50 { background-color: #f9fafb; }
+    .space-y-1 > * + * { margin-top: 0.25rem; }
+    .opacity-50 { opacity: 0.5; }
+    .cursor-not-allowed { cursor: not-allowed; }
+    
+    /* Match search page card density */
+    .card {
+        padding: 1rem !important;
+    }
+    
+    .upload-widget {
+        padding: 2rem 1rem;
+    }
+    
+    /* Make file items more compact like search table rows */
+    .file-item {
+        padding: 0.5rem !important;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,452 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% load string_extras %}
+
+
+{% block title %}Search Records | CIBIL Portal{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="card-header mb-4">
+    <div>
+        <h1>CIBIL Records Search</h1>
+        <p class="text-muted">Search and view processed CIBIL documents and credit reports.</p>
+    </div>
+    
+    <!-- Stats Summary -->
+    <div class="header-time">
+        <!-- <i class="fas fa-database"></i> -->
+        <!-- <span>Total Records: {{ records|length }}</span> -->
+    </div>
+</div>
+
+<!-- Search Card -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-search"></i>
+            Search Records
+        </h3>
+        {% if search_query %}
+        <span class="badge badge-info">
+            <i class="fas fa-filter"></i>
+            Filtered: "{{ search_query }}"
+        </span>
+        {% endif %}
+    </div>
+    
+    <form method="get" class="flex items-center gap-4">
+        <div class="flex-1">
+            <div class="form-group">
+                <label for="searchInput" class="form-label">Search Query</label>
+                <input type="text" 
+                       id="searchInput"
+                       name="q" 
+                       placeholder="Search by name, PAN, mobile, or email..." 
+                       value="{{ search_query }}"
+                       class="form-control">
+                <div class="form-help">
+                    Press Enter to search, or leave empty to view all records
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex gap-2 mt-6">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+            
+            {% if search_query %}
+            <a href="{% url 'cibil:cibil_search' %}" class="btn btn-outline">
+                <i class="fas fa-times"></i>
+                Clear
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Records Table Card -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-table"></i>
+            Processed Records
+        </h3>
+        
+        <div class="text-sm text-muted">
+            <i class="fas fa-info-circle"></i>
+            Click "View" to open the original document
+        </div>
+    </div>
+    
+    <!-- Table -->
+<div class="table-container">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>PAN</th>
+                <th>Contact</th>
+                <th>Score</th>
+                <th>Report Date</th>
+                <th>Summary</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if records %}
+                {% for r in records %}
+                <tr>
+                    <td>
+                        <div class="font-medium">{{ r.name|default:"-" }}</div>
+                        {% if r.email %}
+                        <div class="text-sm text-muted">{{ r.email|truncatechars:25 }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <code class="text-sm">{{ r.pan|default:"-" }}</code>
+                    </td>
+                    <td>
+                        {% if r.mobile %}
+                            <div class="flex flex-col gap-1">
+                                {% for m in r.mobile|cut:" "|split:"," %}
+                                    <div class="text-sm">{{ m }}</div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                        <div class="text-xs text-muted mt-1">Mobile</div>
+                    </td>
+
+                    <td>
+                        <div class="flex flex-col items-start gap-1">
+                            <span class="badge 
+                                {% if r.score >= 750 %}badge-success
+                                {% elif r.score >= 650 %}badge-warning
+                                {% else %}badge-danger
+                                {% endif %}">
+                                {{ r.score|default:"N/A" }}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if r.report_date %}
+                        <div class="text-sm">{{ r.report_date|date:"Y-m-d" }}</div>
+                        <div class="text-xs text-muted">{{ r.report_date|date:"H:i" }}</div>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                    {% if r.summary %}
+                        {% with s=r.summary|json_load %}
+                            <div class="text-sm space-y-1">
+                                <div><strong>Score:</strong> {{ s.score|default:"-" }}</div>
+                                <div><strong>Default Number:</strong> {{ s.default_months|default:"-" }}</div>
+                                <div><strong>Overdue Accounts:</strong> {{ s.overdue_accounts|default:"0" }}</div>
+                                <div><strong>Overdue Amount:</strong> ₹{{ s.overdue_amount|default:"0" }}</div>
+                            </div>
+                        {% endwith %}
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+
+
+                    <td>
+                        <div class="flex gap-2">
+                            {% if r.url %}
+                            <a href="{{ r.url }}" target="_blank" class="table-link">
+                                <i class="fas fa-external-link-alt"></i>
+                                View
+                            </a>
+                            {% endif %}
+                            <button class="table-link text-muted" onclick="showRecordDetails({{ forloop.counter0 }})">
+                                <i class="fas fa-eye"></i>
+                                Details
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        No records found
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+    {% if records %}
+    
+    <!-- Table Footer -->
+    <div class="flex justify-between items-center mt-4 pt-4 border-t">
+        <div class="text-sm text-muted">
+            <i class="fas fa-info-circle"></i>
+            Showing {{ records|length }} record{{ records|pluralize }}
+            {% if search_query %}matching your search{% else %}in total{% endif %}
+        </div>
+        
+        <div class="flex gap-2">
+            <button class="btn btn-sm btn-outline" onclick="exportToCSV()">
+                <i class="fas fa-download"></i>
+                Export CSV
+            </button>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-12">
+        <div class="text-muted mb-4">
+            <i class="fas fa-inbox fa-3x mb-4"></i>
+            <h4 class="mb-2">No Records Found</h4>
+            <p>
+                {% if search_query %}
+                No records match your search query "{{ search_query }}"
+                {% else %}
+                No records have been processed yet
+                {% endif %}
+            </p>
+        </div>
+        {% if search_query %}
+        <a href="{% url 'cibil:cibil_search' %}" class="btn btn-outline">
+            <i class="fas fa-times"></i>
+            Clear Search
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Record Details Modal (Hidden by default) -->
+<div id="recordModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Record Details</h3>
+            <button onclick="closeModal()" class="modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="modalContent">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+    // Prepare records data for JavaScript
+    const recordsData = [
+        {% for r in records %}
+        {
+            name: "{{ r.name|default:'-'|escapejs }}",
+            pan: "{{ r.pan|default:'-'|escapejs }}",
+            mobile: "{{ r.mobile|default:'-'|escapejs }}",
+            email: "{{ r.email|default:'-'|escapejs }}",
+            score: "{{ r.score|default:'N/A'|escapejs }}",
+            report_date: "{{ r.report_date|date:'Y-m-d H:i'|escapejs }}",
+            summary: "{{ r.summary|default:'No summary available'|escapejs }}",
+            url: "{{ r.url|default:''|escapejs }}"
+        },
+        {% endfor %}
+    ];
+
+    function showRecordDetails(index) {
+        const record = recordsData[index];
+        
+        const modalContent = `
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-muted mb-1">Name</label>
+                        <div class="font-medium">${record.name}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-muted mb-1">PAN</label>
+                        <code>${record.pan}</code>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-muted mb-1">Mobile</label>
+                        <div>${record.mobile}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-muted mb-1">Email</label>
+                        <div>${record.email}</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-muted mb-1">Score</label>
+                        <div>
+                            <span class="badge ${getScoreClass(record.score)}">
+                                ${record.score}
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-muted mb-1">Report Date</label>
+                        <div>${record.report_date}</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-muted mb-1">Summary</label>
+                    <div class="bg-gray-50 p-3 rounded">${record.summary}</div>
+                </div>
+                
+                ${record.url ? `
+                <div class="pt-4 border-t">
+                    <a href="${record.url}" target="_blank" class="btn btn-primary">
+                        <i class="fas fa-external-link-alt"></i>
+                        View Original Document
+                    </a>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        
+        document.getElementById('modalContent').innerHTML = modalContent;
+        document.getElementById('modalTitle').textContent = `Details: ${record.name}`;
+        document.getElementById('recordModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('recordModal').style.display = 'none';
+    }
+
+    function getScoreClass(score) {
+        const numScore = parseInt(score);
+        if (isNaN(numScore)) return 'badge-info';
+        if (numScore >= 750) return 'badge-success';
+        if (numScore >= 650) return 'badge-warning';
+        return 'badge-danger';
+    }
+
+    function exportToCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Name,PAN,Mobile,Email,Score,Report Date,Summary\n";
+        
+        recordsData.forEach(record => {
+            const row = [
+                `"${record.name}"`,
+                `"${record.pan}"`,
+                `"${record.mobile}"`,
+                `"${record.email}"`,
+                `"${record.score}"`,
+                `"${record.report_date}"`,
+                `"${record.summary}"`
+            ];
+            csvContent += row.join(",") + "\n";
+        });
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `cibil_records_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('recordModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+
+    // Search input auto-focus
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.focus();
+            // Place cursor at end
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
+    });
+</script>
+
+<style>
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    .modal-content {
+        background-color: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-lg);
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .modal-body {
+        padding: var(--space-lg);
+    }
+    
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: var(--space-xs);
+    }
+    
+    .modal-close:hover {
+        color: var(--text-primary);
+    }
+    
+    .space-y-4 > * + * {
+        margin-top: var(--space-md);
+    }
+    
+    .grid {
+        display: grid;
+    }
+    
+    .gap-4 {
+        gap: var(--space-md);
+    }
+    
+    .border-t {
+        border-top: 1px solid var(--border);
+    }
+    
+    .pt-4 {
+        padding-top: var(--space-md);
+    }
+    
+    .bg-gray-50 {
+        background-color: var(--bg-primary);
+    }
+</style>
+{% endblock %}
