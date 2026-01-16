@@ -131,6 +131,12 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
+ALLOWED_HOSTS = [
+    "cibil-web.onrender.com",
+    "localhost",
+    "127.0.0.1",
+]
+
 # --------------------------------------------------
 # MEDIA FILES (if needed later)
 # --------------------------------------------------

@@ -2,3 +2,6 @@ Django>=4.2,<5.0
 boto3>=1.28.0
 python-dotenv>=1.0.0
 psycopg2
+pdfplumber
+beautifulsoup4
+gunicorn
