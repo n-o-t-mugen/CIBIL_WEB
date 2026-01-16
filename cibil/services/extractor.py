@@ -1,4 +1,5 @@
 import re
+import json
 import pdfplumber
 from pathlib import Path
 from bs4 import BeautifulSoup
@@ -664,6 +665,11 @@ class HTMLExtractor(CIBILExtractor):
         accounts = _extract_accounts_from_html(soup)
         overdue_summary_html = _extract_overdue_summary_from_html_text(text)
         unified_accounts = self._convert_html_accounts_to_unified(accounts)
+        accounts = [
+    acc for acc in accounts
+    if acc.get("default_month_number") is not None
+]
+
         
         return self._build_unified_structure(
             basic_info=basic_info,
@@ -983,20 +989,20 @@ class CIBILDataExtractor:
         
         return self._extractors[ext].extract(file_path)
 
-# def main():
-#     extractor = CIBILDataExtractor()
-#     input_file = "/Users/mruthunjai_govindaraju/Downloads/test/Chinthala Ravikumar.pdf"
-#     try:
-#         result = extractor.extract(input_file)
-#         # print(json.dumps(result, indent=2))
-#         with open("extracted_output.json", "w", encoding="utf-8") as out_file:
-#             json.dump(result, out_file, indent=2)
-#         # print(f"\n✅ Extraction complete! Saved to extracted_output.json")
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         import traceback
-#         traceback.print_exc()
+def main():
+    extractor = CIBILDataExtractor()
+    input_file = "C:\\Users\\BFC\\Documents\\GitHub\\desktop-tutorial\\CIBIL_WEB\\cibil\\services\\Ajay_B_M.pdf"
+    try:
+        result = extractor.extract(input_file)
+        # print(json.dumps(result, indent=2))
+        with open("extracted_output.json", "w", encoding="utf-8") as out_file:
+            json.dump(result, out_file, indent=2)
+        # print(f"\n✅ Extraction complete! Saved to extracted_output.json")
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
