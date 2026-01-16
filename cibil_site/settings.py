@@ -12,6 +12,16 @@ SECRET_KEY = 'django-insecure-dev-key'
 DEBUG = True
 ALLOWED_HOSTS = []
 
+STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 # --------------------------------------------------
 # APPS
 # --------------------------------------------------
@@ -126,10 +136,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 # --------------------------------------------------
 # STATIC FILES CONFIGURATION
 # --------------------------------------------------
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+
 
 ALLOWED_HOSTS = [
     "cibil-web.onrender.com",
