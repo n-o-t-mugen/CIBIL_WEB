@@ -735,7 +735,7 @@ class HTMLExtractor(CIBILExtractor):
         return unified
 
 
-    
+
     def _calculate_account_dpd_average(self, yearly_averages):
         if not yearly_averages:
             return None
@@ -763,7 +763,7 @@ class HTMLExtractor(CIBILExtractor):
                 default_month_numbers.append(default_month)  # ✅ Proper indent
         
         final_dpd_average = round(sum(account_dpd_averages) / len(account_dpd_averages), 1) if account_dpd_averages else None
-        final_default_month_avg = round(sum(default_month_numbers) / len(default_month_numbers), 1) if default_month_numbers else None
+        final_default_month_avg = _calculate_dynamic_final_default_month(accounts) if default_month_numbers else None
 
         return {
             "basic_info": {
@@ -904,7 +904,7 @@ class PDFExtractor(CIBILExtractor):
                 default_month_numbers.append(default_month)
         
         final_dpd_average = round(sum(account_dpd_averages) / len(account_dpd_averages), 1) if account_dpd_averages else None
-        final_default_month_avg = round(sum(default_month_numbers) / len(default_month_numbers), 1) if default_month_numbers else None
+        final_default_month_avg = _calculate_dynamic_final_default_month(accounts) if default_month_numbers else None
         
         return {
             "basic_info": {
@@ -946,7 +946,42 @@ def _default_month_for_year(dpd_string: str) -> Optional[int]:
             return idx
     return None
 
+def _default_month_for_specific_year(dpd_history: dict, year: str) -> Optional[int]:
+    dpd_string = dpd_history.get(year)
+    if not dpd_string:
+        return None
+    return _default_month_for_year(dpd_string)
 
+def _calculate_dynamic_final_default_month(accounts: list) -> Optional[float]:
+    current_year = str(datetime.now().year)
+    previous_year = str(datetime.now().year - 1)
+
+    current_year_values = []
+    fallback_values = []
+
+    for acc in accounts:
+        dpd_history = acc.get("dpd_history", {})
+
+        # current year
+        cur = _default_month_for_specific_year(dpd_history, current_year)
+        if cur is not None:
+            current_year_values.append(cur)
+
+        # previous year (used only if needed)
+        prev = _default_month_for_specific_year(dpd_history, previous_year)
+        if prev is not None:
+            fallback_values.append(prev)
+
+    # RULE 1: Enough data in current year
+    if len(current_year_values) >= 5:
+        return round(sum(current_year_values) / len(current_year_values), 1)
+
+    # RULE 2: Fallback to current + previous year
+    combined = current_year_values + fallback_values
+    if combined:
+        return round(sum(combined) / len(combined), 1)
+
+    return None
 def _calculate_default_month_number(dpd_history: dict) -> Optional[float]:
     """
     FINAL (as per your requirement):
@@ -977,7 +1012,7 @@ class CIBILDataExtractor:
             '.html': HTMLExtractor(),
             '.htm': HTMLExtractor()
         }
-
+    
     def extract(self, file_path):
         fp = Path(file_path)
         if not fp.exists():
@@ -991,7 +1026,7 @@ class CIBILDataExtractor:
 
 def main():
     extractor = CIBILDataExtractor()
-    input_file = "C:\\Users\\BFC\\Documents\\GitHub\\desktop-tutorial\\CIBIL_WEB\\cibil\\services\\Ajay_B_M.pdf"
+    input_file = "/Users/mruthunjai_govindaraju/Downloads/Ajay_B_M.pdf"
     try:
         result = extractor.extract(input_file)
         # print(json.dumps(result, indent=2))
